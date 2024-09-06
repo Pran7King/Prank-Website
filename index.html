@@ -1,0 +1,92 @@
+#include <pistache/endpoint.h>
+#include <iostream>
+
+using namespace Pistache;
+
+class PrankPageHandler : public Http::Handler {
+public:
+    HTTP_PROTOTYPE(PrankPageHandler)
+
+    void onRequest(const Http::Request& req, Http::ResponseWriter writer) override {
+        // Serve the prank HTML
+        std::string prankHtml = R"(
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>System Error</title>
+            <style>
+                body {
+                    background-color: black;
+                    color: green;
+                    font-family: monospace;
+                    overflow: hidden;
+                }
+                .error-message {
+                    position: absolute;
+                    top: 40%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    text-align: center;
+                    font-size: 2em;
+                }
+                .error-code {
+                    margin: 20px 0;
+                }
+                .background-code {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    pointer-events: none;
+                }
+                @keyframes scroll {
+                    0% { transform: translateY(0); }
+                    100% { transform: translateY(-100%); }
+                }
+                .scrolling-text {
+                    white-space: pre-wrap;
+                    font-size: 1.5em;
+                    animation: scroll 10s linear infinite;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="error-message">
+                <div class="error-code">ERROR: SYSTEM COMPROMISED</div>
+                <div>Please contact your administrator.</div>
+            </div>
+            <div class="background-code">
+                <div class="scrolling-text">Loading random code ...</div>
+            </div>
+            <script>
+                let errorMessages = [
+                    "ERROR: Failed to load system files...",
+                    "ERROR: Kernel panic...",
+                    "ERROR: Critical memory failure...",
+                    "ERROR: Device compromised...",
+                    "WARNING: Unauthorized access detected..."
+                ];
+
+                // Show random error messages every 2 seconds
+                setInterval(() => {
+                    let randomMessage = errorMessages[Math.floor(Math.random() * errorMessages.length)];
+                    document.querySelector('.error-code').textContent = randomMessage;
+                }, 2000);
+            </script>
+        </body>
+        </html>
+        )";
+        writer.send(Http::Code::Ok, prankHtml, MIME(Text, Html));
+    }
+};
+
+int main() {
+    Http::Endpoint server(Address(Ipv4::any(), Port(8080)));
+    auto opts = Http::Endpoint::options().threads(1);
+    server.init(opts);
+    server.setHandler(Http::make_handler<PrankPageHandler>());
+    server.serve();
+}
